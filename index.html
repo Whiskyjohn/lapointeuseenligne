@@ -188,7 +188,7 @@
       <button id="btnPrint">🖨️ Imprimer</button>
       <!-- Bouton pour exporter en PDF -->
       <button id="btnExportPdf">📄 Exporter en PDF</button>
-      <!-- Bouton pour capturer l'écran mobile -->
+      <!-- Bouton pour capturer l'écran mobile (affiché uniquement sur mobile) -->
       <button id="btnCapture">📱 Capture d'écran mobile</button>
     </div>
   </div>
@@ -293,7 +293,7 @@
         exportPDF();
       });
 
-      // 8) Capture d'écran mobile (PNG)
+      // 8) Capture d'écran mobile (PNG) : fonctionnel uniquement sur mobile Android/iOS.
       const exportImage = () => {
         html2canvas(el('container'), {
           scale: 1,
@@ -304,19 +304,23 @@
           const a = document.createElement('a');
           a.href = dataURL;
           a.download = 'capture.png';
-          // Pour iOS, l'attribut download n'est pas supporté, on ouvre dans un nouvel onglet
-          if (/iPhone|iPad|iPod/i.test(window.navigator.userAgent)) {
-            window.open(dataURL, '_blank');
-          } else {
+          // Si iOS, ouvert dans un nouvel onglet
+          if (/iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent)) {
             a.click();
           }
         });
       };
-      el('btnCapture').addEventListener('click', exportImage);
-      el('btnCapture').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        exportImage();
-      });
+
+      // Vérifier si l'appareil est mobile; sinon masquer le bouton de capture.
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        el('btnCapture').addEventListener('click', exportImage);
+        el('btnCapture').addEventListener('touchend', (e) => {
+          e.preventDefault();
+          exportImage();
+        });
+      } else {
+        el('btnCapture').style.display = 'none';
+      }
     });
   </script>
 </body>
