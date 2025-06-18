@@ -293,25 +293,21 @@
         exportPDF();
       });
 
-      // 8) Capture d'écran mobile (PNG) : fonctionnel uniquement sur mobile Android/iOS.
+      // 8) Capture d'écran mobile (PNG) : uniquement sur mobile pour obtenir une copie d'écran.
       const exportImage = () => {
+        const scaleFactor = window.devicePixelRatio || 1;
         html2canvas(el('container'), {
-          scale: 1,
+          scale: scaleFactor,
           useCORS: true,
           allowTaint: false
         }).then(canvas => {
           const dataURL = canvas.toDataURL('image/png');
-          const a = document.createElement('a');
-          a.href = dataURL;
-          a.download = 'capture.png';
-          // Si iOS, ouvert dans un nouvel onglet
-          if (/iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent)) {
-            a.click();
-          }
+          // Pour reproduire au mieux une copie d'écran, on ouvre le résultat dans un nouvel onglet.
+          window.open(dataURL, '_blank');
         });
       };
 
-      // Vérifier si l'appareil est mobile; sinon masquer le bouton de capture.
+      // Active la capture uniquement sur mobile
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         el('btnCapture').addEventListener('click', exportImage);
         el('btnCapture').addEventListener('touchend', (e) => {
