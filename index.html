@@ -9,9 +9,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   
-  <!-- html2pdf.js -->
+  <!-- html2pdf.js & html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
-  <!-- html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
@@ -25,7 +24,7 @@
       font: 16px/1.4 Arial, sans-serif;
       background: #f5f5f5;
     }
-    /* Bandeau jaune fixe */
+    /* Bandeau jaune */
     .notice {
       position: fixed;
       top: 0;
@@ -42,15 +41,15 @@
       margin: 0;
       white-space: nowrap;
     }
-    /* Conteneur responsive */
+    /* Conteneur principal */
     .container {
       width: 90%;
       max-width: 600px;
       margin: 60px auto 20px;
       background: #fff;
+      padding: 1em;
       box-sizing: border-box;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
-      padding: 1em;
     }
     h1 {
       text-align: center;
@@ -137,7 +136,6 @@
     }
   </style>
 </head>
-
 <body>
   <!-- Bandeau jaune -->
   <div class="notice" role="alert">
@@ -172,59 +170,58 @@
 
     <button id="btnPrint">🖨️ Imprimer</button>
     <button id="btnExportPdf">📄 Exporter en PDF</button>
-    <!-- Bouton pour capturer l'écran mobile, actif uniquement sur mobile -->
     <button id="btnCapture">📱 Capture d'écran mobile</button>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener("DOMContentLoaded", () => {
       const C = 3.152798625498602598736942089143897036463;
       const el = id => document.getElementById(id);
 
-      // 1) Compteur serveur
-      fetch('/api/visit', { method: 'POST' })
+      // Compteur visiteurs
+      fetch("/api/visit", { method: "POST" })
         .then(r => r.json())
-        .then(j => el('visitor-counter').textContent = `Visiteurs : ${j.count}`)
-        .catch(() => el('visitor-counter').textContent = 'Visiteurs : N/A');
+        .then(j => el("visitor-counter").textContent = `Visiteurs : ${j.count}`)
+        .catch(() => el("visitor-counter").textContent = "Visiteurs : N/A");
 
-      // 2) URL & date
-      el('urlText').textContent = location.href;
-      el('today').textContent = new Date().toLocaleDateString('fr-FR');
+      // URL et date
+      el("urlText").textContent = location.href;
+      el("today").textContent = new Date().toLocaleDateString("fr-FR");
 
-      // 3) IP
-      fetch('https://api.ipify.org?format=json')
+      // IP
+      fetch("https://api.ipify.org?format=json")
         .then(r => r.json())
-        .then(j => el('ip').value = j.ip)
-        .catch(() => el('ip').value = 'Erreur');
+        .then(j => el("ip").value = j.ip)
+        .catch(() => el("ip").value = "Erreur");
 
-      // 4) Pointage + clé
-      el('btnPointer').addEventListener('click', () => {
-        const name = el('name').value.trim();
+      // Pointage + clé
+      el("btnPointer").addEventListener("click", () => {
+        const name = el("name").value.trim();
         if (!name) {
-          alert('Veuillez saisir votre nom.');
-          el('name').focus();
+          alert("Veuillez saisir votre nom.");
+          el("name").focus();
           return;
         }
         const now = new Date();
-        const dateFR = now.toLocaleDateString('fr-FR');
-        const timeFR = now.toLocaleTimeString('fr-FR', { hour12: false });
+        const dateFR = now.toLocaleDateString("fr-FR");
+        const timeFR = now.toLocaleTimeString("fr-FR", { hour12: false });
         const digits = (dateFR + timeFR).match(/\d/g) || [];
         const sumD = digits.reduce((s, d) => s + Number(d), 0);
-        const sumN = name.split('').reduce((s, ch) => s + ch.charCodeAt(0) + 1, 0);
+        const sumN = name.split("").reduce((s, ch) => s + ch.charCodeAt(0) + 1, 0);
         const key = ((sumD + sumN) / C).toFixed(6);
-        el('result').textContent =
-          `${name} a pointé le ${dateFR} à ${timeFR} avec l'IP ${el('ip').value}\nClé : ${key}`;
+        el("result").textContent =
+          `${name} a pointé le ${dateFR} à ${timeFR} avec l'IP ${el("ip").value}\nClé : ${key}`;
       });
 
-      // 5) Géoloc + carte
+      // Géoloc + carte
       let map, marker;
-      el('btnGeo').addEventListener('click', () => {
-        const demo = el('demo');
+      el("btnGeo").addEventListener("click", () => {
+        const demo = el("demo");
         if (!navigator.geolocation) {
-          demo.textContent = 'Géoloc non supportée';
+          demo.textContent = "Géoloc non supportée";
           return;
         }
-        demo.textContent = 'Localisation en cours…';
+        demo.textContent = "Localisation en cours…";
         navigator.geolocation.getCurrentPosition(
           pos => {
             const { latitude: lat, longitude: lon, accuracy: acc } = pos.coords;
@@ -233,17 +230,17 @@
             fetch(`https://api-adresse.data.gouv.fr/reverse?lat=${lat}&lon=${lon}`)
               .then(r => r.json())
               .then(d => {
-                demo.innerHTML += `<br>→ ${d.features?.[0]?.properties?.label || 'Non trouvée'}`;
+                demo.innerHTML += `<br>→ ${d.features?.[0]?.properties?.label || "Non trouvée"}`;
               })
               .catch(() => {
-                demo.innerHTML += '<br>Adresse indisponible';
+                demo.innerHTML += "<br>Adresse indisponible";
               });
-            const mapEl = el('map');
-            mapEl.style.display = 'block';
+            const mapEl = el("map");
+            mapEl.style.display = "block";
             if (!map) {
               map = L.map(mapEl).setView([lat, lon], 15);
-              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
+              L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: "© OpenStreetMap contributors"
               }).addTo(map);
               marker = L.marker([lat, lon]).addTo(map);
             } else {
@@ -251,79 +248,58 @@
               marker.setLatLng([lat, lon]);
             }
           },
-          err => el('demo').textContent = `Erreur géoloc : ${err.message}`,
+          err => el("demo").textContent = `Erreur géoloc : ${err.message}`,
           { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
       });
 
-      // 6) Imprimer
-      el('btnPrint').addEventListener('click', () => window.print());
+      // Imprimer
+      el("btnPrint").addEventListener("click", () => window.print());
 
-      // 7) Exporter en PDF (format A4)
+      // Exporter en PDF (format A4)
       const exportPDF = () => {
         html2pdf().set({
           margin: 5,
-          filename: 'pointage.pdf',
-          image: { type: 'jpeg', quality: 1 },
+          filename: "pointage.pdf",
+          image: { type: "jpeg", quality: 1 },
           html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css'] }
-        }).from(el('container')).save();
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["avoid-all", "css"] }
+        }).from(el("container")).save();
       };
-      el('btnExportPdf').addEventListener('click', exportPDF);
-      el('btnExportPdf').addEventListener('touchend', (e) => {
+      el("btnExportPdf").addEventListener("click", exportPDF);
+      el("btnExportPdf").addEventListener("touchend", e => {
         e.preventDefault();
         exportPDF();
       });
 
-      // 8) Capture d'écran mobile (PNG) et stockage via Web Share API, uniquement sur mobile.
+      // Capture d'écran mobile en PNG
       const exportImage = () => {
-        // Utilisation du facter devicePixelRatio pour une capture de qualité
         const scaleFactor = window.devicePixelRatio || 1;
-        html2canvas(el('container'), {
+        html2canvas(el("container"), {
           scale: scaleFactor,
           useCORS: true,
           allowTaint: false
         }).then(canvas => {
-          canvas.toBlob(blob => {
-            const file = new File([blob], "capture.png", { type: "image/png" });
-            // Si l'appareil supporte l'API Web Share avec fichiers
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              navigator.share({
-                files: [file],
-                title: "Capture d'écran mobile",
-                text: "Voici ma capture d'écran."
-              }).catch(error => {
-                console.error("Erreur lors du partage :", error);
-              });
-            } else {
-              // Sinon, ouverture dans une nouvelle fenêtre (fallback)
-              const dataURL = canvas.toDataURL("image/png");
-              const newWindow = window.open("", "_blank");
-              if (newWindow) {
-                newWindow.document.write(
-                  `<html><head><title>Capture d'écran mobile</title></head>
-                   <body style="margin:0;padding:0;">
-                   <img src="${dataURL}" style="width:100%;" alt="Capture d'écran mobile"/>
-                   </body></html>`
-                );
-              } else {
-                alert("Impossible d'ouvrir une nouvelle fenêtre pour la capture.");
-              }
-            }
-          }, "image/png");
+          const dataURL = canvas.toDataURL("image/png");
+          // Crée un lien pour télécharger l'image PNG
+          const a = document.createElement("a");
+          a.href = dataURL;
+          a.download = "capture.png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
         });
       };
-
-      // Active la capture uniquement sur mobile
+      // Active la capture d'écran uniquement sur mobile
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        el('btnCapture').addEventListener('click', exportImage);
-        el('btnCapture').addEventListener('touchend', (e) => {
+        el("btnCapture").addEventListener("click", exportImage);
+        el("btnCapture").addEventListener("touchend", e => {
           e.preventDefault();
           exportImage();
         });
       } else {
-        el('btnCapture').style.display = 'none';
+        el("btnCapture").style.display = "none";
       }
     });
   </script>
