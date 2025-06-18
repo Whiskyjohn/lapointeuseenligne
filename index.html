@@ -42,20 +42,15 @@
       margin: 0;
       white-space: nowrap;
     }
-    /* Décalage pour contenu */
-    .inner {
-      padding: 1em;
-      padding-top: 4em;
-    }
     /* Conteneur responsive */
     .container {
       width: 90%;
       max-width: 600px;
-      margin: 0 auto;
+      margin: 60px auto 20px;
       background: #fff;
       box-sizing: border-box;
-      page-break-inside: avoid;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      padding: 1em;
     }
     h1 {
       text-align: center;
@@ -105,14 +100,8 @@
     }
     #btnPointer { background: #cc0000; }
     #btnGeo, #btnPrint { background: #0066cc; }
-    /* Bouton pour générer le PDF */
-    #btnExportPdf { 
-      background: #007700; 
-    }
-    /* Bouton pour capturer l'image */
-    #btnCapture { 
-      background: #007700; 
-    }
+    #btnExportPdf { background: #007700; }
+    #btnCapture { background: #007700; }
     #result, #demo {
       margin: 8px 0;
       padding: 8px;
@@ -128,7 +117,6 @@
       margin: 8px 0;
       border: 1px solid #333;
     }
-    /* Compteur visiteurs */
     #visitor-counter {
       position: fixed;
       bottom: 8px;
@@ -140,7 +128,6 @@
       color: #333;
       z-index: 997;
     }
-    /* Impression : conserver la dimension de la carte */
     @media print {
       #map {
         display: block !important;
@@ -164,33 +151,29 @@
 
   <!-- Contenu principal -->
   <div class="container" id="container">
-    <div class="inner">
-      <div class="logo" aria-hidden="true"><span>⚖️</span></div>
-      <h1>Pointage en Ligne</h1>
-      <div id="siteURL">Site : <span id="urlText">– – –</span></div>
-      <p>Date du jour : <strong id="today">– – –</strong></p>
+    <div class="logo" aria-hidden="true"><span>⚖️</span></div>
+    <h1>Pointage en Ligne</h1>
+    <div id="siteURL">Site : <span id="urlText">– – –</span></div>
+    <p>Date du jour : <strong id="today">– – –</strong></p>
 
-      <form onsubmit="return false;">
-        <label for="name">Nom :</label>
-        <input type="text" id="name">
-        <label for="ip">Votre IP :</label>
-        <input type="text" id="ip" readonly placeholder="Chargement…">
-        <button id="btnPointer">Pointer ici</button>
-      </form>
+    <form onsubmit="return false;">
+      <label for="name">Nom :</label>
+      <input type="text" id="name">
+      <label for="ip">Votre IP :</label>
+      <input type="text" id="ip" readonly placeholder="Chargement…">
+      <button id="btnPointer">Pointer ici</button>
+    </form>
 
-      <div id="result">Aucun pointage pour le moment.</div>
+    <div id="result">Aucun pointage pour le moment.</div>
 
-      <!-- Bouton de géolocalisation -->
-      <button id="btnGeo">📍 Géolocalisation & Adresse</button>
-      <div id="demo"></div>
-      <div id="map"></div>
+    <button id="btnGeo">📍 Géolocalisation & Adresse</button>
+    <div id="demo"></div>
+    <div id="map"></div>
 
-      <button id="btnPrint">🖨️ Imprimer</button>
-      <!-- Bouton pour exporter en PDF -->
-      <button id="btnExportPdf">📄 Exporter en PDF</button>
-      <!-- Bouton pour capturer l'écran mobile (affiché uniquement sur mobile) -->
-      <button id="btnCapture">📱 Capture d'écran mobile</button>
-    </div>
+    <button id="btnPrint">🖨️ Imprimer</button>
+    <button id="btnExportPdf">📄 Exporter en PDF</button>
+    <!-- Bouton pour capturer l'écran mobile, actif uniquement sur mobile -->
+    <button id="btnCapture">📱 Capture d'écran mobile</button>
   </div>
 
   <script>
@@ -293,17 +276,42 @@
         exportPDF();
       });
 
-      // 8) Capture d'écran mobile (PNG) : uniquement sur mobile pour obtenir une copie d'écran.
+      // 8) Capture d'écran mobile (PNG) et stockage via Web Share API, uniquement sur mobile.
       const exportImage = () => {
+        // Utilisation du facter devicePixelRatio pour une capture de qualité
         const scaleFactor = window.devicePixelRatio || 1;
         html2canvas(el('container'), {
           scale: scaleFactor,
           useCORS: true,
           allowTaint: false
         }).then(canvas => {
-          const dataURL = canvas.toDataURL('image/png');
-          // Pour reproduire au mieux une copie d'écran, on ouvre le résultat dans un nouvel onglet.
-          window.open(dataURL, '_blank');
+          canvas.toBlob(blob => {
+            const file = new File([blob], "capture.png", { type: "image/png" });
+            // Si l'appareil supporte l'API Web Share avec fichiers
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              navigator.share({
+                files: [file],
+                title: "Capture d'écran mobile",
+                text: "Voici ma capture d'écran."
+              }).catch(error => {
+                console.error("Erreur lors du partage :", error);
+              });
+            } else {
+              // Sinon, ouverture dans une nouvelle fenêtre (fallback)
+              const dataURL = canvas.toDataURL("image/png");
+              const newWindow = window.open("", "_blank");
+              if (newWindow) {
+                newWindow.document.write(
+                  `<html><head><title>Capture d'écran mobile</title></head>
+                   <body style="margin:0;padding:0;">
+                   <img src="${dataURL}" style="width:100%;" alt="Capture d'écran mobile"/>
+                   </body></html>`
+                );
+              } else {
+                alert("Impossible d'ouvrir une nouvelle fenêtre pour la capture.");
+              }
+            }
+          }, "image/png");
         });
       };
 
