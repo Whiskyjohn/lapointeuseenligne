@@ -143,17 +143,17 @@
       Cette pointeuse sert à prouver les heures supplémentaires et jours de présence. Aucune donnée n’est récoltée : pensez à imprimer ou sauvegarder.
     </p>
   </div>
-
+  
   <!-- Compteur visiteurs -->
   <div id="visitor-counter">Chargement…</div>
-
+  
   <!-- Contenu principal -->
   <div class="container" id="container">
     <div class="logo" aria-hidden="true"><span>⚖️</span></div>
     <h1>Pointage en Ligne</h1>
     <div id="siteURL">Site : <span id="urlText">– – –</span></div>
     <p>Date du jour : <strong id="today">– – –</strong></p>
-
+  
     <form onsubmit="return false;">
       <label for="name">Nom :</label>
       <input type="text" id="name">
@@ -161,40 +161,41 @@
       <input type="text" id="ip" readonly placeholder="Chargement…">
       <button id="btnPointer">Pointer ici</button>
     </form>
-
+  
     <div id="result">Aucun pointage pour le moment.</div>
-
+  
     <button id="btnGeo">📍 Géolocalisation & Adresse</button>
     <div id="demo"></div>
     <div id="map"></div>
-
+  
     <button id="btnPrint">🖨️ Imprimer</button>
     <button id="btnExportPdf">📄 Exporter en PDF</button>
+    <!-- Bouton pour capturer l'image -->
     <button id="btnCapture">📱 Capture d'écran mobile</button>
   </div>
-
+  
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const C = 3.152798625498602598736942089143897036463;
       const el = id => document.getElementById(id);
-
-      // Compteur visiteurs
+  
+      // 1) Compteur visiteurs
       fetch("/api/visit", { method: "POST" })
         .then(r => r.json())
         .then(j => el("visitor-counter").textContent = `Visiteurs : ${j.count}`)
         .catch(() => el("visitor-counter").textContent = "Visiteurs : N/A");
-
-      // URL et date
+  
+      // 2) URL et date
       el("urlText").textContent = location.href;
       el("today").textContent = new Date().toLocaleDateString("fr-FR");
-
-      // IP
+  
+      // 3) IP
       fetch("https://api.ipify.org?format=json")
         .then(r => r.json())
         .then(j => el("ip").value = j.ip)
         .catch(() => el("ip").value = "Erreur");
-
-      // Pointage + clé
+  
+      // 4) Pointage + clé
       el("btnPointer").addEventListener("click", () => {
         const name = el("name").value.trim();
         if (!name) {
@@ -212,8 +213,8 @@
         el("result").textContent =
           `${name} a pointé le ${dateFR} à ${timeFR} avec l'IP ${el("ip").value}\nClé : ${key}`;
       });
-
-      // Géoloc + carte
+  
+      // 5) Géoloc + carte
       let map, marker;
       el("btnGeo").addEventListener("click", () => {
         const demo = el("demo");
@@ -252,11 +253,11 @@
           { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
       });
-
-      // Imprimer
+  
+      // 6) Imprimer
       el("btnPrint").addEventListener("click", () => window.print());
-
-      // Exporter en PDF (format A4)
+  
+      // 7) Exporter en PDF (format A4)
       const exportPDF = () => {
         html2pdf().set({
           margin: 5,
@@ -272,8 +273,8 @@
         e.preventDefault();
         exportPDF();
       });
-
-      // Capture d'écran mobile en PNG
+  
+      // 8) Capture d'écran mobile en PNG et téléchargement automatique
       const exportImage = () => {
         const scaleFactor = window.devicePixelRatio || 1;
         html2canvas(el("container"), {
@@ -282,7 +283,7 @@
           allowTaint: false
         }).then(canvas => {
           const dataURL = canvas.toDataURL("image/png");
-          // Crée un lien pour télécharger l'image PNG
+          // Créer et déclencher un téléchargement automatique
           const a = document.createElement("a");
           a.href = dataURL;
           a.download = "capture.png";
@@ -291,7 +292,8 @@
           document.body.removeChild(a);
         });
       };
-      // Active la capture d'écran uniquement sur mobile
+  
+      // Activer la capture d'écran sur mobile uniquement
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         el("btnCapture").addEventListener("click", exportImage);
         el("btnCapture").addEventListener("touchend", e => {
