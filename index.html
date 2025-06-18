@@ -38,6 +38,8 @@
     }
     .notice p {
       margin: 0;
+      /* Force le texte sur une seule ligne */
+      white-space: nowrap;
     }
 
     /* Décalage pour contenu */
@@ -153,8 +155,7 @@
   <!-- Bandeau jaune -->
   <div class="notice" role="alert">
     <p>
-      Cette pointeuse sert à prouver les heures supplémentaires et jours de présence.<br>
-      Aucune donnée n’est récoltée : pensez à imprimer ou sauvegarder.
+      Cette pointeuse sert à prouver les heures supplémentaires et jours de présence. Aucune donnée n’est récoltée : pensez à imprimer ou sauvegarder.
     </p>
   </div>
 
@@ -294,18 +295,27 @@
           .from(el('container'))
           .save();
 
-      // 8) Capture d'écran mobile optimisée pour plus de rapidité
+      // 8) Capture d'écran mobile optimisée pour Android et iPhone
       el('btnCapture').onclick = () =>
         html2canvas(el('container'), {
           scale: 1, // Réduction de l'échelle pour accélérer le rendu
           useCORS: true,
           allowTaint: false
         }).then(canvas => {
-          const a = document.createElement('a');
-          // Optionnel : utiliser un format JPEG pour une taille encore plus réduite
-          a.href = canvas.toDataURL('image/png');
-          a.download = 'capture.png';
-          a.click();
+          // Utilisation de JPEG pour une image de taille réduite
+          var dataURL = canvas.toDataURL('image/jpeg', 0.8);
+          var a = document.createElement('a');
+          a.href = dataURL;
+          a.download = 'capture.jpeg';
+          
+          // Si l'appareil est iOS, l'attribut download n'étant pas supporté, on ouvre l'image dans un nouvel onglet
+          if (/iPhone|iPad|iPod/i.test(window.navigator.userAgent)) {
+            window.open(dataURL, '_blank');
+          } else {
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
         });
     });
   </script>
