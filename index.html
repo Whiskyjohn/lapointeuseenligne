@@ -6,10 +6,12 @@
   <title>Pointage en Ligne</title>
 
   <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <!-- html2pdf.js & html2canvas -->
+  
+  <!-- html2pdf.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+  <!-- html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
@@ -98,13 +100,19 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      /* Amélioration du tactile */
       touch-action: manipulation;
-      -webkit-tap-highlight-color: rgba(0,0,0,0);
+      -webkit-tap-highlight-color: transparent;
     }
     #btnPointer { background: #cc0000; }
     #btnGeo, #btnPrint { background: #0066cc; }
-    #btnExportPdf, #btnCapture { background: #007700; }
+    /* Bouton pour générer le PDF */
+    #btnExportPdf { 
+      background: #007700; 
+    }
+    /* Bouton pour capturer l'image */
+    #btnCapture { 
+      background: #007700; 
+    }
     #result, #demo {
       margin: 8px 0;
       padding: 8px;
@@ -159,29 +167,28 @@
     <div class="inner">
       <div class="logo" aria-hidden="true"><span>⚖️</span></div>
       <h1>Pointage en Ligne</h1>
-
       <div id="siteURL">Site : <span id="urlText">– – –</span></div>
       <p>Date du jour : <strong id="today">– – –</strong></p>
 
       <form onsubmit="return false;">
         <label for="name">Nom :</label>
         <input type="text" id="name">
-
         <label for="ip">Votre IP :</label>
         <input type="text" id="ip" readonly placeholder="Chargement…">
-
         <button id="btnPointer">Pointer ici</button>
       </form>
 
       <div id="result">Aucun pointage pour le moment.</div>
 
-      <!-- Bouton géoloc toujours actif -->
+      <!-- Bouton de géolocalisation -->
       <button id="btnGeo">📍 Géolocalisation & Adresse</button>
       <div id="demo"></div>
       <div id="map"></div>
 
       <button id="btnPrint">🖨️ Imprimer</button>
+      <!-- Bouton pour exporter en PDF -->
       <button id="btnExportPdf">📄 Exporter en PDF</button>
+      <!-- Bouton pour capturer l'écran mobile -->
       <button id="btnCapture">📱 Capture d'écran mobile</button>
     </div>
   </div>
@@ -208,7 +215,7 @@
         .catch(() => el('ip').value = 'Erreur');
 
       // 4) Pointage + clé
-      el('btnPointer').onclick = () => {
+      el('btnPointer').addEventListener('click', () => {
         const name = el('name').value.trim();
         if (!name) {
           alert('Veuillez saisir votre nom.');
@@ -222,14 +229,13 @@
         const sumD = digits.reduce((s, d) => s + Number(d), 0);
         const sumN = name.split('').reduce((s, ch) => s + ch.charCodeAt(0) + 1, 0);
         const key = ((sumD + sumN) / C).toFixed(6);
-
         el('result').textContent =
           `${name} a pointé le ${dateFR} à ${timeFR} avec l'IP ${el('ip').value}\nClé : ${key}`;
-      };
+      });
 
-      // 5) Géoloc + carte (toujours possible)
+      // 5) Géoloc + carte
       let map, marker;
-      el('btnGeo').onclick = () => {
+      el('btnGeo').addEventListener('click', () => {
         const demo = el('demo');
         if (!navigator.geolocation) {
           demo.textContent = 'Géoloc non supportée';
@@ -239,10 +245,8 @@
         navigator.geolocation.getCurrentPosition(
           pos => {
             const { latitude: lat, longitude: lon, accuracy: acc } = pos.coords;
-            demo.innerHTML =
-              `Lat : ${lat.toFixed(6)} — Lon : ${lon.toFixed(6)}<br>` +
-              `Précision : ±${acc.toFixed(1)} m<br>Recherche adresse…`;
-
+            demo.innerHTML = `Lat : ${lat.toFixed(6)} — Lon : ${lon.toFixed(6)}<br>` +
+                             `Précision : ±${acc.toFixed(1)} m<br>Recherche adresse…`;
             fetch(`https://api-adresse.data.gouv.fr/reverse?lat=${lat}&lon=${lon}`)
               .then(r => r.json())
               .then(d => {
@@ -251,7 +255,6 @@
               .catch(() => {
                 demo.innerHTML += '<br>Adresse indisponible';
               });
-
             const mapEl = el('map');
             mapEl.style.display = 'block';
             if (!map) {
@@ -265,50 +268,55 @@
               marker.setLatLng([lat, lon]);
             }
           },
-          err => demo.textContent = `Erreur géoloc : ${err.message}`,
+          err => el('demo').textContent = `Erreur géoloc : ${err.message}`,
           { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
-      };
+      });
 
       // 6) Imprimer
-      el('btnPrint').onclick = () => window.print();
+      el('btnPrint').addEventListener('click', () => window.print());
 
-      // 7) Export PDF A4
-      el('btnExportPdf').onclick = () => {
-        html2pdf()
-          .set({
-            margin: 5,
-            filename: 'pointage.pdf',
-            image: { type: 'jpeg', quality: 1 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css'] }
-          })
-          .from(el('container'))
-          .save();
+      // 7) Exporter en PDF (format A4)
+      const exportPDF = () => {
+        html2pdf().set({
+          margin: 5,
+          filename: 'pointage.pdf',
+          image: { type: 'jpeg', quality: 1 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['avoid-all', 'css'] }
+        }).from(el('container')).save();
       };
+      el('btnExportPdf').addEventListener('click', exportPDF);
+      el('btnExportPdf').addEventListener('touchend', (e) => {
+        e.preventDefault();
+        exportPDF();
+      });
 
-      // 8) Capture d'écran mobile optimisée pour Android et iPhone
-      el('btnCapture').onclick = () =>
+      // 8) Capture d'écran mobile (PNG)
+      const exportImage = () => {
         html2canvas(el('container'), {
           scale: 1,
           useCORS: true,
           allowTaint: false
         }).then(canvas => {
-          let dataURL = canvas.toDataURL('image/jpeg', 0.8);
-          let a = document.createElement('a');
+          const dataURL = canvas.toDataURL('image/png');
+          const a = document.createElement('a');
           a.href = dataURL;
-          a.download = 'capture.jpeg';
-          
-          // Sur iOS, l'attribut download n'est pas supporté
+          a.download = 'capture.png';
+          // Pour iOS, l'attribut download n'est pas supporté, on ouvre dans un nouvel onglet
           if (/iPhone|iPad|iPod/i.test(window.navigator.userAgent)) {
             window.open(dataURL, '_blank');
           } else {
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
           }
         });
+      };
+      el('btnCapture').addEventListener('click', exportImage);
+      el('btnCapture').addEventListener('touchend', (e) => {
+        e.preventDefault();
+        exportImage();
+      });
     });
   </script>
 </body>
