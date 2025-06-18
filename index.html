@@ -33,32 +33,27 @@
       border-left: 4px solid #e6b800;
       padding: 4px 8px;
       font-size: 0.75em;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       z-index: 999;
     }
     .notice p {
       margin: 0;
-      /* Force le texte sur une seule ligne */
       white-space: nowrap;
     }
-
     /* Décalage pour contenu */
     .inner {
-      padding: 12mm 8mm 8mm;
+      padding: 1em;
       padding-top: 4em;
     }
+    /* Conteneur responsive */
     .container {
-      width: 200mm;
-      max-width: 100%;
+      width: 90%;
+      max-width: 600px;
       margin: 0 auto;
       background: #fff;
       box-sizing: border-box;
       page-break-inside: avoid;
-    }
-    @media screen {
-      .container {
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-      }
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
     h1 {
       text-align: center;
@@ -95,7 +90,7 @@
     }
     button {
       width: 100%;
-      padding: 8px;
+      padding: 12px;
       margin: 8px 0;
       font-size: 1em;
       font-weight: bold;
@@ -103,16 +98,13 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      /* Amélioration du tactile */
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(0,0,0,0);
     }
-    #btnPointer {
-      background: #cc0000;
-    }
-    #btnGeo, #btnPrint {
-      background: #0066cc;
-    }
-    #btnExportPdf, #btnCapture {
-      background: #007700;
-    }
+    #btnPointer { background: #cc0000; }
+    #btnGeo, #btnPrint { background: #0066cc; }
+    #btnExportPdf, #btnCapture { background: #007700; }
     #result, #demo {
       margin: 8px 0;
       padding: 8px;
@@ -133,14 +125,14 @@
       position: fixed;
       bottom: 8px;
       left: 8px;
-      background: rgba(255, 255, 255, 0.8);
+      background: rgba(255,255,255,0.8);
       padding: 4px 8px;
       border-radius: 4px;
       font-size: 0.85em;
       color: #333;
       z-index: 997;
     }
-    /* Pour l'export PDF, conserver la dimension fixe de la carte */
+    /* Impression : conserver la dimension de la carte */
     @media print {
       #map {
         display: block !important;
@@ -282,7 +274,7 @@
       el('btnPrint').onclick = () => window.print();
 
       // 7) Export PDF A4
-      el('btnExportPdf').onclick = () =>
+      el('btnExportPdf').onclick = () => {
         html2pdf()
           .set({
             margin: 5,
@@ -294,21 +286,21 @@
           })
           .from(el('container'))
           .save();
+      };
 
       // 8) Capture d'écran mobile optimisée pour Android et iPhone
       el('btnCapture').onclick = () =>
         html2canvas(el('container'), {
-          scale: 1, // Réduction de l'échelle pour accélérer le rendu
+          scale: 1,
           useCORS: true,
           allowTaint: false
         }).then(canvas => {
-          // Utilisation de JPEG pour une image de taille réduite
-          var dataURL = canvas.toDataURL('image/jpeg', 0.8);
-          var a = document.createElement('a');
+          let dataURL = canvas.toDataURL('image/jpeg', 0.8);
+          let a = document.createElement('a');
           a.href = dataURL;
           a.download = 'capture.jpeg';
           
-          // Si l'appareil est iOS, l'attribut download n'étant pas supporté, on ouvre l'image dans un nouvel onglet
+          // Sur iOS, l'attribut download n'est pas supporté
           if (/iPhone|iPad|iPod/i.test(window.navigator.userAgent)) {
             window.open(dataURL, '_blank');
           } else {
